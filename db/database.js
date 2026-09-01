@@ -84,6 +84,14 @@ db.exec(`
     extraHour REAL DEFAULT 0
   );
 
+  CREATE TABLE IF NOT EXISTS bike_statuses (
+    id TEXT PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL,
+    label TEXT,
+    color TEXT DEFAULT 'secondary',
+    isDefault INTEGER DEFAULT 0,
+    sortOrder INTEGER DEFAULT 0
+  );
   CREATE INDEX IF NOT EXISTS idx_bikes_status ON bikes(status);
   CREATE INDEX IF NOT EXISTS idx_bikes_station ON bikes(stationId);
   CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);

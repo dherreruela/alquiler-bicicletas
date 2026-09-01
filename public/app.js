@@ -81,6 +81,7 @@ const pageTitles = {
   bookings: 'Reservas',
   customers: 'Clientes',
   pricing: 'Tarifas',
+  bikeStatuses: 'Estados de bicicletas',
   reports: 'Reportes'
 };
 
@@ -101,6 +102,7 @@ const renderers = {
   bookings: renderBookings,
   customers: renderCustomers,
   pricing: renderPricing,
+  bikeStatuses: renderBikeStatuses,
   reports: renderReports
 };
 
@@ -170,6 +172,7 @@ async function renderDashboard(content) {
 async function renderBikes(content) {
   const bikes = await api.get('/bikes');
   const stations = await api.get('/stations');
+  const statuses = await api.get('/bike-statuses');
 
   content.innerHTML = `
     <div class="toolbar">
@@ -183,12 +186,20 @@ async function renderBikes(content) {
           </tr>
         </thead>
         <tbody>
-          ${bikes.map(b => `
+          ${bikes.map(b => {
+            const statusInfo = statuses.find(s => s.name === b.status) || { label: b.status, color: 'secondary' };
+            return `
             <tr>
               <td>${escapeHtml(b.bikeNumber)}</td>
               <td>${escapeHtml(b.name)}</td>
               <td>${escapeHtml(b.type)}</td>
-              <td><span class="badge-status badge-${b.status}">${b.status}</span></td>
+              <td>
+                <span class="badge-status badge-${statusInfo.color}">${escapeHtml(statusInfo.label || b.status)}</span>
+                <select class="status-select" data-bike="${b.id}" onchange="changeBikeStatus('${b.id}', this.value)" title="Cambiar estado">
+                  ${statuses.map(s =>
+                    `<option value="${escapeHtml(s.name)}" ${b.status === s.name ? 'selected' : ''}>${escapeHtml(s.label)}</option>`).join('')}
+                </select>
+              </td>
               <td>${b.stationId ? escapeHtml(stations.find(s => s.id === b.stationId)?.name || 'N/A') : '—'}</td>
               <td>${formatMoney(b.pricePerHour)}</td>
               <td class="flex gap-10">
@@ -196,11 +207,23 @@ async function renderBikes(content) {
                 <button class="btn btn-sm btn-danger" onclick="deleteBike('${b.id}')"><i class="fas fa-trash"></i></button>
               </td>
             </tr>
-          `).join('')}
+          `;
+          }).join('')}
         </tbody>
       </table>
     </div>
   `;
+}
+
+async function changeBikeStatus(id, status) {
+  try {
+    await api.patch(`/bikes/${id}/status`, { status });
+    showToast('Estado actualizado', 'success');
+    renderPage('bikes');
+  } catch (err) {
+    showToast(err.message, 'error');
+    renderPage('bikes');
+  }
 }
 
 async function openBikeForm(id = null) {
@@ -714,6 +737,119 @@ async function savePricing(event, id) {
     closeModal();
     showToast('Tarifa guardada', 'success');
     renderPage('pricing');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+// ---------- ESTADOS DE BICICLETAS ----------
+async function renderBikeStatuses(content) {
+  const statuses = await api.get('/bike-statuses');
+  const bikes = await api.get('/bikes');
+
+  const usedCounts = {};
+  bikes.forEach(b => {
+    usedCounts[b.status] = (usedCounts[b.status] || 0) + 1;
+  });
+
+  content.innerHTML = `
+    <div class="toolbar">
+      <button class="btn btn-primary" onclick="openStatusForm()"><i class="fas fa-plus"></i> Nuevo estado</button>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th><th>Etiqueta</th><th>Color</th><th>Bicicletas</th><th>Por defecto</th><th>Orden</th><th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${statuses.map(s => `
+            <tr>
+              <td><code>${escapeHtml(s.name)}</code></td>
+              <td><span class="badge-status badge-${escapeHtml(s.color)}">${escapeHtml(s.label)}</span></td>
+              <td>${escapeHtml(s.color)}</td>
+              <td>${usedCounts[s.name] || 0}</td>
+              <td>${s.isDefault ? '✓' : '—'}</td>
+              <td>${s.sortOrder}</td>
+              <td class="flex gap-10">
+                <button class="btn btn-sm btn-primary" onclick="openStatusForm('${s.id}')"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-sm btn-danger" onclick="deleteStatus('${s.id}')"><i class="fas fa-trash"></i></button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    <p class="form-hint">Los estados marcados como "por defecto" no se pueden eliminar. Si eliminas un estado que no esté en uso, desaparecerá de la lista de selección de las bicicletas.</p>
+  `;
+}
+
+async function openStatusForm(id = null) {
+  let status = { name: '', label: '', color: 'secondary', sortOrder: 0 };
+  if (id) {
+    const statuses = await api.get('/bike-statuses');
+    status = statuses.find(s => s.id === id);
+  }
+
+  const colors = ['green', 'primary', 'orange', 'red', 'secondary', 'purple'];
+  openModal(`
+    <h2>${id ? 'Editar' : 'Nuevo'} estado</h2>
+    <form onsubmit="saveStatus(event, '${id || ''}')">
+      <div class="form-group">
+        <label>Nombre interno (ej. "disponible")</label>
+        <input type="text" name="name" value="${escapeHtml(status.name)}" required placeholder="ej. disponible" title="Nombre técnico almacenado en la base de datos">
+      </div>
+      <div class="form-group">
+        <label>Etiqueta visible (ej. "Disponible")</label>
+        <input type="text" name="label" value="${escapeHtml(status.label)}" required placeholder="ej. Disponible">
+      </div>
+      <div class="form-group">
+        <label>Color</label>
+        <select name="color">
+          ${colors.map(c => `<option value="${c}" ${status.color === c ? 'selected' : ''}>${c}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Orden</label>
+        <input type="number" name="sortOrder" value="${status.sortOrder || 0}">
+      </div>
+      ${id && status.isDefault ? '<p class="form-hint">Este es un estado por defecto del sistema.</p>' : ''}
+      <button type="submit" class="btn btn-success btn-block">Guardar</button>
+    </form>
+  `);
+}
+
+async function saveStatus(event, id) {
+  event.preventDefault();
+  const form = event.target;
+  const data = {
+    name: form.name.value.trim(),
+    label: form.label.value.trim(),
+    color: form.color.value,
+    sortOrder: parseInt(form.sortOrder.value || 0)
+  };
+
+  try {
+    if (id) {
+      await api.put(`/bike-statuses/${id}`, data);
+    } else {
+      await api.post('/bike-statuses', data);
+    }
+    closeModal();
+    showToast('Estado guardado', 'success');
+    renderPage('bikeStatuses');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function deleteStatus(id) {
+  if (!confirm('¿Eliminar este estado?')) return;
+  try {
+    await api.del(`/bike-statuses/${id}`);
+    showToast('Estado eliminado', 'success');
+    renderPage('bikeStatuses');
   } catch (err) {
     showToast(err.message, 'error');
   }

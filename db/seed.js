@@ -66,12 +66,21 @@ const pricing = [
   { id: 'p4', bikeType: 'Infantil', pricePerHour: 2.0, pricePerDay: 10, extraHour: 1 }
 ];
 
+// Estados de bicicleta (configurables)
+const bikeStatuses = [
+  { id: 'st-disponible', name: 'disponible', label: 'Disponible', color: 'green', isDefault: 1, sortOrder: 1 },
+  { id: 'st-alquilada', name: 'alquilada', label: 'Alquilada', color: 'primary', isDefault: 1, sortOrder: 2 },
+  { id: 'st-reparacion', name: 'en_reparacion', label: 'En reparación', color: 'orange', isDefault: 1, sortOrder: 3 },
+  { id: 'st-baja', name: 'baja', label: 'Dada de baja', color: 'red', isDefault: 1, sortOrder: 4 }
+];
+
 // Guardar todos los datos
 function seed() {
   // Limpiar tablas antes de insertar para evitar duplicados al re-ejecutar.
   // Orden importante: primero las tablas con claves foráneas (bookings),
   // y hacia el final las tablas que son referenciadas.
   clearCollection('bookings');
+  clearCollection('bikeStatuses');
   clearCollection('bikes');
   clearCollection('stations');
   clearCollection('customers');
@@ -84,6 +93,7 @@ function seed() {
   writeCollection('bookings', bookings);
   writeCollection('users', users);
   writeCollection('pricing', pricing);
+  writeCollection('bikeStatuses', bikeStatuses);
   console.log('✅ Datos de ejemplo cargados correctamente');
 }
 

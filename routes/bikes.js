@@ -76,8 +76,9 @@ router.put('/:id', authenticate, (req, res) => {
 // Cambiar estado de una bicicleta
 router.patch('/:id/status', authenticate, (req, res) => {
   const { status } = req.body;
-  const validStatus = ['disponible', 'alquilada', 'en_reparacion', 'baja'];
-  if (!validStatus.includes(status)) {
+  // Validar que el estado existe en la tabla de estados configurables
+  const validStatuses = readCollection('bikeStatuses').map(s => s.name);
+  if (!validStatuses.includes(status)) {
     return res.status(400).json({ error: 'Estado no válido.' });
   }
 

@@ -11,7 +11,8 @@ const COLLECTION_TABLE = {
   customers: { table: 'customers', id: 'id' },
   bookings: { table: 'bookings', id: 'id' },
   users: { table: 'users', id: 'id' },
-  pricing: { table: 'pricing', id: 'id' }
+  pricing: { table: 'pricing', id: 'id' },
+  bikeStatuses: { table: 'bike_statuses', id: 'id' }
 };
 
 // Lista de columnas por tabla (para construir las consultas)
@@ -124,3 +125,4 @@ module.exports = {
   generateId,
   dbInstance
 };
+

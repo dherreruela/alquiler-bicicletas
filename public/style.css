@@ -355,6 +355,33 @@ tr:hover { background: #f8f9fa; }
 .badge-completada { background: #e1f3e8; color: var(--secondary); }
 .badge-cancelada { background: #fddfdf; color: var(--danger); }
 
+/* Badges de colores configurables (estados de bicicletas) */
+.badge-primary { background: #e8f0fe; color: var(--primary); }
+.badge-green { background: #e1f3e8; color: var(--secondary); }
+.badge-orange { background: #fff3e0; color: var(--warning); }
+.badge-red { background: #fde8e8; color: var(--danger); }
+.badge-secondary { background: #eee; color: var(--text-light); }
+.badge-purple { background: #f3e8ff; color: #7c3aed; }
+
+/* Selector de estado en la tabla de bicicletas */
+.status-select {
+  margin-left: 8px;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* Texto de ayuda en formularios */
+.form-hint {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  margin-top: 12px;
+}
+
 /* Toolbar con acciones */
 .toolbar {
   display: flex;
