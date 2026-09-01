@@ -1,0 +1,15 @@
+# Configuración de Nixpacks para Docker build en Dokploy.
+# Garantiza la versión correcta de Node y las herramientas de build
+# necesarias para compilar el módulo nativo better-sqlite3.
+
+[variables]
+NODE_VERSION = "18"
+
+[phases.setup]
+nixPkgs = ["nodejs_18", "python3", "gnumake", "gcc12"]
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.start]
+cmds = ["npm run start"]

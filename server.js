@@ -5,6 +5,8 @@ const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
 const config = require('./config/index');
+const db = require('./db/database');
+const seed = require('./db/seed');
 
 const app = express();
 const PORT = config.port;
@@ -43,7 +45,19 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: err.message || 'Error interno del servidor' });
 });
 
+// Poblar la base de datos la primera vez (datos de ejemplo y usuario admin).
+// En despliegues limpios (p. ej. Dokploy/Nixpacks) la BD no incluye datos;
+// si está vacía la inicializamos para que la app sea usable.
+(function initDatabase() {
+  const bikesCount = db.prepare('SELECT COUNT(*) AS n FROM bikes').get().n;
+  if (bikesCount === 0) {
+    console.log('📦 Base de datos vacía: cargando datos iniciales...');
+    seed();
+  } else {
+    console.log('✅ Base de datos ya inicializada.');
+  }
+})();
+
 app.listen(PORT, () => {
   console.log(`🔧 BikeShare SaaS corriendo en http://localhost:${PORT}`);
 });
-
